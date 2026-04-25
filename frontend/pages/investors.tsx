@@ -1,0 +1,4 @@
+import Head from 'next/head'
+import Layout from '../components/Layout'
+import InvestorForm from '../components/InvestorForm'
+export default function Investors(){return <><Head><title>Investisseurs | KAMOGUI</title></Head><Layout><section className="pageHero"><div className="container"><p className="eyebrow">Investisseurs & partenaires</p><h1><span className="goldWord">Dossier corporate.</span><br/>Accès qualifié.</h1><p className="lead">Déposez une demande pour initier un échange avec l’équipe KAMOGUI et recevoir une orientation adaptée.</p></div></section><section className="content"><div className="container investor"><div><h2 className="sectionTitle">Demander le dossier investisseur</h2><p className="muted">Votre demande sera analysée automatiquement et priorisée selon son niveau de qualification commerciale.</p></div><InvestorForm/></div></section></Layout></>}

@@ -13,14 +13,6 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
-      - key: AI_PROVIDER
-        value: auto
-      - key: OPENROUTER_MODEL
-        value: mistralai/mistral-7b-instruct:free
-      - key: GROQ_MODEL
-        value: llama-3.1-8b-instant
-      - key: DATABASE_URL
-        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY

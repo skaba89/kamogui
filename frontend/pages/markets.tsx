@@ -1,0 +1,4 @@
+import Head from 'next/head'
+import Layout from '../components/Layout'
+import GoldPrices from '../components/GoldPrices'
+export default function Markets(){return <><Head><title>Marchés & Cours de l’or | KAMOGUI</title></Head><Layout><section className="pageHero"><div className="container"><p className="eyebrow">Marchés</p><h1><span className="goldWord">Cours de l’or.</span><br/>Données indicatives live.</h1><p className="lead">Suivi indicatif du prix spot de l’or dans les principales devises internationales et régionales.</p></div></section><GoldPrices/><section className="content"><div className="container"><div className="card"><h3>Note marché</h3><p className="muted">Les prix affichés sont indicatifs et doivent être validés avec les sources de marché et les partenaires de transaction avant toute décision commerciale.</p></div></div></section></Layout></>}
