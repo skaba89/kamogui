@@ -14,7 +14,7 @@ const services = [
   ['Exportation & logistique', 'Coordination export, suivi opérationnel, documentation douanière et reporting exécutif vers les parties prenantes.'],
   ['Relations investisseurs', 'Qualification des opportunités, préparation du dossier corporate et accompagnement des échanges partenaires.']
 ]
-const process = ['Sourcing qualifié', 'Audit documentaire', 'Validation KYC/AML', 'Structuration transaction', 'Export & reporting']
+const processSteps = ['Sourcing qualifié', 'Audit documentaire', 'Validation KYC/AML', 'Structuration transaction', 'Export & reporting']
 
 export default function Home() {
   const [prices, setPrices] = useState<Prices>({})
@@ -81,7 +81,7 @@ export default function Home() {
 
       <section id="services" className="content" style={{paddingTop:0}}><div className="container"><h2 className="sectionTitle">Services corporate</h2><p className="muted" style={{maxWidth:850}}>Des services structurés pour transformer une opportunité aurifère en dossier crédible, contrôlable et exploitable par des partenaires institutionnels.</p><div className="grid" style={{marginTop:26}}>{services.map(([t,d])=><div className="card" key={t}><h3>{t}</h3><p className="muted">{d}</p><a href="#contact" style={{color:gold,textDecoration:'none',fontWeight:800}}>Demander une consultation →</a></div>)}</div></div></section>
 
-      <section className="content" style={{paddingTop:0}}><div className="container"><h2 className="sectionTitle">Processus opérationnel</h2><div className="process">{process.map((p,i)=><div className="card step" key={p}><div className="stepnum">0{i+1}</div><h3>{p}</h3><p className="muted">Contrôles, validation, documentation et suivi exécutif.</p></div>)}</div></div></section>
+      <section className="content" style={{paddingTop:0}}><div className="container"><h2 className="sectionTitle">Processus opérationnel</h2><div className="process">{processSteps.map((p,i)=><div className="card step" key={p}><div className="stepnum">0{i+1}</div><h3>{p}</h3><p className="muted">Contrôles, validation, documentation et suivi exécutif.</p></div>)}</div></div></section>
 
       <section id="compliance" className="content" style={{paddingTop:0}}><div className="container"><div className="card" style={{background:'linear-gradient(135deg,rgba(212,175,55,.14),rgba(255,255,255,.03))'}}><h2 className="sectionTitle" style={{color:gold}}>Conformité, sécurité & gouvernance</h2><div className="grid">{['KYC/AML partenaires','Contrôle de provenance','Traçabilité documentaire','Audit trail transactionnel','Reporting institutionnel','Sécurité des transactions'].map(x=><p className="muted" key={x}>✓ {x}</p>)}</div></div></div></section>
 
