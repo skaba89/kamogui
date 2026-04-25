@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from app.services.market.gold_price_service import get_gold_market_price
+
 router = APIRouter(tags=["Core API"])
 
 DEMO_TOKEN = "kamogui-demo-token"
@@ -26,7 +28,7 @@ class DocPayload(BaseModel):
 
 @router.get("/api/health")
 def health():
-    return {"status": "ok", "service": "kamogui-api", "version": "5.0.0", "ts": int(time.time())}
+    return {"status": "ok", "service": "kamogui-api", "version": "6.0.0", "ts": int(time.time())}
 
 @router.post("/api/auth/login")
 def login(payload: LoginPayload):
@@ -37,9 +39,7 @@ def login(payload: LoginPayload):
 
 @router.get("/api/market/gold")
 def gold_market():
-    base_usd = 2350.50
-    rates = {"USD": 1, "EUR": .92, "GBP": .79, "CNY": 7.23, "GNF": 8620, "XOF": 603.5}
-    return {"source": "fallback", "unit": "oz", "updated_at": int(time.time()), "prices": {k: round(base_usd*v, 2) for k, v in rates.items()}}
+    return get_gold_market_price()
 
 @router.post("/api/ai/chat")
 def ai_chat(payload: ChatPayload):
