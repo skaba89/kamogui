@@ -9,7 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-app = FastAPI(title='KAMOGUI Enterprise API', version='3.0.0')
+try:
+    from app.routers.gold_prospector import router as gold_prospector_router
+except Exception:
+    gold_prospector_router = None
+
+app = FastAPI(title='KAMOGUI Enterprise API', version='3.1.0')
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,6 +23,9 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+if gold_prospector_router:
+    app.include_router(gold_prospector_router)
 
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
@@ -45,7 +53,7 @@ def is_authenticated(authorization: Optional[str] = None, token: Optional[str] =
 
 @app.get('/api/health')
 def health():
-    return {'status': 'ok', 'service': 'kamogui-api', 'ts': int(time.time())}
+    return {'status': 'ok', 'service': 'kamogui-api', 'version': '3.1.0', 'gold_prospector': bool(gold_prospector_router), 'ts': int(time.time())}
 
 @app.post('/api/auth/login')
 def login(payload: LoginPayload):
@@ -55,7 +63,6 @@ def login(payload: LoginPayload):
 
 @app.get('/api/market/gold')
 def gold_market():
-    # Fallback stable côté API. Le frontend peut consommer une API prix externe via variable d'environnement.
     base_usd = 2350.50
     rates = {'USD': 1, 'EUR': .92, 'GBP': .79, 'CNY': 7.23, 'GNF': 8620, 'XOF': 603.5}
     return {'source': 'fallback', 'unit': 'oz', 'updated_at': int(time.time()), 'prices': {k: round(base_usd*v, 2) for k, v in rates.items()}}
