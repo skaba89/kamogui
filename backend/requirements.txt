@@ -5,3 +5,7 @@ python-dotenv>=1.0
 reportlab>=4.2
 pydantic>=2.7
 beautifulsoup4>=4.12
+SQLAlchemy>=2.0
+psycopg2-binary>=2.9
+PyJWT>=2.8
+stripe>=8.0
