@@ -7,6 +7,7 @@ from app.services.scoring.trust_score import compute_trust_score
 from app.services.scraping.web_scraper import search_web
 from app.services.scraping.email_extractor import extract_emails_from_url
 from app.services.crm.lead_repository import save_lead, get_leads
+from app.services.ai.gold_copywriter import generate_gold_sales_email, generate_follow_up_email
 
 router = APIRouter(prefix="/api/gold-prospector", tags=["Gold Prospector"])
 
@@ -15,6 +16,9 @@ class AnalyzePayload(BaseModel):
 
 class SearchPayload(BaseModel):
     query: str
+
+class EmailPayload(BaseModel):
+    lead: dict
 
 @router.post("/analyze")
 def analyze(payload: AnalyzePayload):
@@ -65,6 +69,14 @@ def search(payload: SearchPayload):
         "count": len(prospects),
         "prospects": prospects
     }
+
+@router.post("/generate-email")
+def generate_email(payload: EmailPayload):
+    return generate_gold_sales_email(payload.lead)
+
+@router.post("/follow-up")
+def follow_up(payload: EmailPayload):
+    return generate_follow_up_email(payload.lead)
 
 @router.get("/leads")
 def leads():
