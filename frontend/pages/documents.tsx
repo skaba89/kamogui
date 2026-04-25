@@ -1,25 +1,3 @@
-import Layout from "../components/Layout"
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://kamogui.onrender.com"
-
-export default function Docs() {
-  function generate(type: string) {
-    window.open(API_URL + "/api/ai/generate-doc?type=" + type, "_blank")
-  }
-
-  return (
-    <Layout>
-      <div className="container">
-        <h1>Documents IA</h1>
-
-        <button className="btn btnGold" onClick={() => generate("NDA")}>
-          Générer NDA
-        </button>
-
-        <button className="btn btnGold" onClick={() => generate("LOI")}>
-          Générer LOI
-        </button>
-      </div>
-    </Layout>
-  )
-}
+import { useState } from 'react'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kamogui-backend.onrender.com'
+export default function Documents(){const [type,setType]=useState('LOI'); const [msg,setMsg]=useState(''); async function generate(){const token=localStorage.getItem('kamogui_token')||''; const r=await fetch(`${API_URL}/api/ai/generate-doc`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({type,company:'KAMOGUI International Gold'})}); if(!r.ok){setMsg('Connexion requise ou accès refusé.'); return} const blob=await r.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`kamogui-${type}.pdf`; a.click(); setMsg('Document généré.')} return <><section className="pageHero"><div className="container"><p className="eyebrow">Gold Autonome</p><h1>Génération de <span className="goldWord">documents</span></h1><p className="lead">Documents corporate réservés aux utilisateurs connectés.</p></div></section><section className="content"><div className="container"><div className="card form authCard"><select className="input" value={type} onChange={e=>setType(e.target.value)}><option>LOI</option><option>NDA</option><option>Term Sheet</option><option>KYC Checklist</option></select><button className="btn btnGold" onClick={generate}>Générer PDF</button>{msg&&<p className="muted">{msg}</p>}</div></div></section></>}

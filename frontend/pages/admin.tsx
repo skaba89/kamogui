@@ -1,12 +1,1 @@
-import Layout from "../components/Layout"
-
-export default function Admin() {
-  return (
-    <Layout>
-      <div className="container">
-        <h1>CRM Leads</h1>
-        <p>Les leads investisseurs seront affichés ici.</p>
-      </div>
-    </Layout>
-  )
-}
+export default function Admin(){return <><section className="pageHero"><div className="container"><p className="eyebrow">Administration</p><h1>Admin <span className="goldWord">KAMOGUI</span></h1><p className="lead">Module réservé : suivi prospects, demandes investisseurs, conformité et contenus.</p></div></section><section className="content"><div className="container grid"><div className="card"><h3>Leads</h3><p className="muted">Qualification commerciale et scoring.</p></div><div className="card"><h3>Contenus</h3><p className="muted">Gestion des services, marchés et pages corporate.</p></div><div className="card"><h3>Sécurité</h3><p className="muted">Rôles, accès et journal d’audit.</p></div></div></section></>}

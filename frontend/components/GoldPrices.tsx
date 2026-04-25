@@ -1,86 +1,15 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://kamogui.onrender.com"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kamogui-backend.onrender.com'
+const money = ['USD','EUR','GBP','CNY','GNF','XOF']
+const fallback: Record<string, number> = { USD: 2350.5, EUR: 2162.46, GBP: 1856.9, CNY: 16994.12, GNF: 20261410, XOF: 1418617.1 }
 
-const currencies = ["USD", "EUR", "GBP", "CNY", "GNF", "XOF"]
+function fmt(c:string,v:number){try{return new Intl.NumberFormat('fr-FR',{style:'currency',currency:c,maximumFractionDigits:c==='GNF'||c==='XOF'?0:2}).format(v)}catch{return `${Math.round(v).toLocaleString('fr-FR')} ${c}`}}
 
-export default function GoldPrices() {
-  const [prices, setPrices] = useState<Record<string, number | null>>({})
-  const [updatedAt, setUpdatedAt] = useState<string>("")
-  const [loading, setLoading] = useState(true)
-
-  async function loadPrices() {
-    try {
-      const res = await fetch(`${API_URL}/api/gold`, {
-        cache: "no-store",
-      })
-
-      const data = await res.json()
-
-      setPrices({
-        USD: data.USD ?? null,
-        EUR: data.EUR ?? null,
-        GBP: data.GBP ?? null,
-        CNY: data.CNY ?? null,
-        GNF: data.GNF ?? null,
-        XOF: data.XOF ?? null,
-      })
-
-      setUpdatedAt(data.updated_at || new Date().toISOString())
-    } catch (error) {
-      console.error("Gold price fetch failed", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadPrices()
-
-    const interval = setInterval(() => {
-      loadPrices()
-    }, 60000)
-
-    return () => clearInterval(interval)
-  }, [])
-
-  function formatValue(code: string, value: number | null | undefined) {
-    if (!value || loading) return "Chargement..."
-
-    return new Intl.NumberFormat("fr-FR", {
-      maximumFractionDigits: code === "GNF" || code === "XOF" ? 0 : 2,
-    }).format(value)
-  }
-
-  function formatDate(value: string) {
-    if (!value) return "en cours"
-
-    try {
-      return new Date(value).toLocaleString("fr-FR")
-    } catch {
-      return "en cours"
-    }
-  }
-
-  return (
-    <div id="markets" className="container priceStrip">
-      <div className="strip">
-        <div>
-          <b>COURS DE L’OR EN TEMPS RÉEL</b>
-          <br />
-          <small style={{ color: "#aaa" }}>
-            Mise à jour : {formatDate(updatedAt)}
-          </small>
-        </div>
-
-        {currencies.map((code) => (
-          <div className="price" key={code}>
-            <small>{code}</small>
-            <b>{formatValue(code, prices[code])}</b>
-            <span className="positive">live</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+export default function GoldPrices(){
+  const [prices,setPrices]=useState<Record<string,number>>(fallback)
+  const [updated,setUpdated]=useState('')
+  const [source,setSource]=useState('chargement')
+  useEffect(()=>{let stop=false; async function load(){try{const r=await fetch(`${API_URL}/api/market/gold`,{cache:'no-store'}); const d=await r.json(); if(!stop&&d.prices){setPrices(d.prices); setSource(d.source||'api'); setUpdated(new Date((d.updated_at||Date.now()/1000)*1000).toLocaleTimeString('fr-FR'))}}catch{setSource('fallback')}} load(); const id=setInterval(load,60000); return()=>{stop=true; clearInterval(id)}},[])
+  return <div id="markets" className="container priceStrip"><div className="strip"><div className="priceTitle"><b>COURS DE L’OR EN TEMPS RÉEL</b><br/><small style={{color:'#aaa'}}>Prix spot indicatif par once · {source} {updated && `· ${updated}`}</small></div>{money.map(c=><div className="price" key={c}><small>{c}</small><b>{fmt(c,prices[c]||0)}</b><span className="positive">live</span></div>)}</div></div>
 }

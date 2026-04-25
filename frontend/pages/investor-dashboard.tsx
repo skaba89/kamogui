@@ -1,18 +1,2 @@
-import Layout from "../components/Layout"
-
-export default function Dashboard() {
-  return (
-    <Layout>
-      <div className="container">
-        <h1>Dashboard Investisseur</h1>
-
-        <ul>
-          <li>Prix de l’or en temps réel</li>
-          <li>Simulation</li>
-          <li>Opportunités</li>
-          <li>Documents générés</li>
-        </ul>
-      </div>
-    </Layout>
-  )
-}
+import Link from 'next/link'
+export default function InvestorDashboard(){return <><section className="pageHero"><div className="container"><p className="eyebrow">Espace connecté</p><h1>Dashboard <span className="goldWord">investisseur</span></h1><p className="lead">Vue synthétique des opportunités, documents, conformité et prochaines actions.</p></div></section><section className="content"><div className="container grid"><div className="card"><h3>Pipeline</h3><p className="metric">12</p><p className="muted">Opportunités qualifiées</p></div><div className="card"><h3>Conformité</h3><p className="metric">96%</p><p className="muted">Dossiers complets</p></div><div className="card"><h3>Documents</h3><p className="metric">8</p><p className="muted">Documents prêts</p></div><div className="card"><h3>Actions</h3><p className="muted"><Link href="/documents">Générer une LOI / NDA</Link></p></div></div></section></>}

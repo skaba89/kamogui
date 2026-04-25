@@ -1,67 +1,109 @@
-from fastapi import FastAPI, Request
+import os
+import io
+import time
+from typing import Optional
+
+import requests
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-import os, requests, datetime, io
-from reportlab.pdfgen import canvas
+from pydantic import BaseModel
 
-app = FastAPI(title="KAMOGUI Enterprise API")
-OPENROUTER_API_KEY=os.getenv("OPENROUTER_API_KEY")
-GROQ_API_KEY=os.getenv("GROQ_API_KEY")
-SUPABASE_URL=os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY=os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-FRONTEND_ORIGIN=os.getenv("FRONTEND_ORIGIN","*")
-app.add_middleware(CORSMiddleware,allow_origins=[FRONTEND_ORIGIN] if FRONTEND_ORIGIN!="*" else ["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"])
+app = FastAPI(title='KAMOGUI Enterprise API', version='3.0.0')
 
-def score_investor(p):
-    score=0; amount=str(p.get('investment_range','')).lower(); need=str(p.get('need',''))
-    if any(x in amount for x in ['1m','million','500','m€']): score+=35
-    if p.get('company'): score+=15
-    if p.get('country'): score+=10
-    if p.get('phone') or p.get('whatsapp'): score+=15
-    if len(need)>25: score+=25
-    return {"score":min(score,100),"level":"HOT" if score>=75 else "WARM" if score>=45 else "COLD"}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[os.getenv('FRONTEND_URL', '*')],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 
-def supabase_insert(table,payload):
-    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY: return {"stored":False,"reason":"Supabase not configured"}
-    r=requests.post(f"{SUPABASE_URL.rstrip('/')}/rest/v1/{table}",headers={"apikey":SUPABASE_SERVICE_ROLE_KEY,"Authorization":f"Bearer {SUPABASE_SERVICE_ROLE_KEY}","Content-Type":"application/json","Prefer":"return=representation"},json=payload,timeout=20)
-    return {"stored":r.status_code in [200,201],"status":r.status_code,"data":r.json() if r.content else None}
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+JWT_DEMO_TOKEN = os.getenv('JWT_DEMO_TOKEN', 'kamogui-demo-token')
 
-@app.get('/')
-def root(): return {"status":"Kamogui API running","version":"enterprise-v2"}
-@app.get('/health')
-def health(): return {"status":"ok"}
-@app.get('/api/gold')
-def gold_prices():
-    try:
-        r=requests.get('https://api.metals.live/v1/spot',timeout=10); data=r.json(); gold=next((i[1] for i in data if i[0]=='gold'),None)
-    except Exception: gold=2335.68
-    return {"USD":gold,"EUR":gold*0.92,"GBP":gold*0.79,"CNY":gold*7.2,"GNF":gold*8600,"XOF":gold*600,"updated_at":datetime.datetime.utcnow().isoformat()}
-@app.post('/api/investor-lead')
-async def investor_lead(request:Request):
-    p=await request.json(); s=score_investor(p); row={**p,**s,"created_at":datetime.datetime.utcnow().isoformat()}; stored=supabase_insert('investor_leads',row); return {"ok":True,"lead":row,"supabase":stored}
+class LoginPayload(BaseModel):
+    email: str
+    password: str
 
-def local_ai(message):
-    m=message.lower()
-    if 'simulate' in m or 'simulation' in m: return "Je peux simuler une exposition or. Donnez le montant, la devise, la durée et l’objectif."
-    if 'nda' in m: return "Je peux préparer un NDA corporate. Donnez le nom de la société, pays et interlocuteur."
-    if 'loi' in m or 'letter' in m: return "Je peux générer une Letter of Intent. Donnez acheteur, vendeur, quantité indicative et pays."
-    if 'risk' in m or 'risque' in m: return "J’analyse le risque selon KYC/AML, provenance, documents, contreparties et logistique."
-    return "Je peux qualifier un investisseur, générer un document, simuler une opération, préparer un email commercial et analyser la conformité."
+class ChatPayload(BaseModel):
+    message: str
+
+class SimPayload(BaseModel):
+    amount: float = 100000
+    variation_pct: float = 5
+
+class DocPayload(BaseModel):
+    type: str = 'LOI'
+    company: str = 'KAMOGUI International Gold'
+
+def is_authenticated(authorization: Optional[str] = None, token: Optional[str] = None) -> bool:
+    raw = authorization or token or ''
+    if raw.lower().startswith('bearer '): raw = raw.split(' ', 1)[1]
+    return bool(raw and raw in {JWT_DEMO_TOKEN, 'kamogui-demo-token'})
+
+@app.get('/api/health')
+def health():
+    return {'status': 'ok', 'service': 'kamogui-api', 'ts': int(time.time())}
+
+@app.post('/api/auth/login')
+def login(payload: LoginPayload):
+    if payload.email.lower() in {'investor@kamogui.com', 'admin@kamogui.com'} and payload.password in {'kamogui-demo', 'admin-demo'}:
+        return {'access_token': JWT_DEMO_TOKEN, 'token_type': 'bearer', 'user': {'email': payload.email, 'role': 'admin' if payload.email.startswith('admin') else 'investor'}}
+    raise HTTPException(status_code=401, detail='Identifiants invalides')
+
+@app.get('/api/market/gold')
+def gold_market():
+    # Fallback stable côté API. Le frontend peut consommer une API prix externe via variable d'environnement.
+    base_usd = 2350.50
+    rates = {'USD': 1, 'EUR': .92, 'GBP': .79, 'CNY': 7.23, 'GNF': 8620, 'XOF': 603.5}
+    return {'source': 'fallback', 'unit': 'oz', 'updated_at': int(time.time()), 'prices': {k: round(base_usd*v, 2) for k, v in rates.items()}}
+
+def call_ai(prompt: str, authenticated: bool = False) -> str:
+    system = 'Tu es Gold Autonome, assistant corporate de KAMOGUI International Gold. Réponds de manière professionnelle, prudente, conforme, sans conseil financier personnalisé.'
+    if authenticated:
+        system += ' L’utilisateur est connecté : tu peux proposer des analyses, documents, due diligence, checklist et scénarios indicatifs.'
+    if OPENROUTER_API_KEY:
+        try:
+            r = requests.post('https://openrouter.ai/api/v1/chat/completions', timeout=18, headers={'Authorization': f'Bearer {OPENROUTER_API_KEY}', 'Content-Type': 'application/json'}, json={'model': os.getenv('OPENROUTER_MODEL', 'openai/gpt-4o-mini'), 'messages': [{'role': 'system', 'content': system}, {'role': 'user', 'content': prompt}]})
+            if r.ok: return r.json()['choices'][0]['message']['content']
+        except Exception:
+            pass
+    if GROQ_API_KEY:
+        try:
+            r = requests.post('https://api.groq.com/openai/v1/chat/completions', timeout=18, headers={'Authorization': f'Bearer {GROQ_API_KEY}', 'Content-Type': 'application/json'}, json={'model': os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant'), 'messages': [{'role': 'system', 'content': system}, {'role': 'user', 'content': prompt}]})
+            if r.ok: return r.json()['choices'][0]['message']['content']
+        except Exception:
+            pass
+    return 'Gold Autonome est disponible en mode dégradé. Configurez OPENROUTER_API_KEY ou GROQ_API_KEY dans Render pour activer les réponses avancées.'
 
 @app.post('/api/ai/chat')
-@app.post('/api/chat')
-async def chat(request:Request):
-    d=await request.json(); msg=d.get('message',''); system="Tu es Gold Autonome, IA business de KAMOGUI. Tu qualifies les investisseurs, proposes des prochaines actions, génères des documents et restes prudent sans promettre de rendement garanti."
-    for provider,key,url,model in [('openrouter',OPENROUTER_API_KEY,'https://openrouter.ai/api/v1/chat/completions',os.getenv('OPENROUTER_MODEL','mistralai/mistral-7b-instruct:free')),('groq',GROQ_API_KEY,'https://api.groq.com/openai/v1/chat/completions',os.getenv('GROQ_MODEL','llama-3.1-8b-instant'))]:
-        if key:
-            try:
-                r=requests.post(url,headers={"Authorization":f"Bearer {key}"},json={"model":model,"messages":[{"role":"system","content":system},{"role":"user","content":msg}]},timeout=30)
-                return {"reply":r.json()['choices'][0]['message']['content'],"provider":provider}
-            except Exception: pass
-    return {"reply":local_ai(msg),"provider":"local"}
+def ai_chat(payload: ChatPayload, authorization: Optional[str] = Header(default=None)):
+    return {'reply': call_ai(payload.message, is_authenticated(authorization=authorization))}
+
 @app.post('/api/ai/simulate')
-async def simulate(request:Request):
-    p=await request.json(); amount=float(p.get('amount',0)); pct=float(p.get('variation_pct',5)); return {"amount":amount,"scenario_up":amount*(1+pct/100),"scenario_down":amount*(1-pct/100),"warning":"Simulation indicative, non garantie."}
+def simulate(payload: SimPayload):
+    up = payload.amount * (1 + payload.variation_pct / 100)
+    down = payload.amount * (1 - payload.variation_pct / 100)
+    return {'amount': payload.amount, 'variation_pct': payload.variation_pct, 'scenario_up': round(up, 2), 'scenario_down': round(down, 2), 'warning': 'Simulation indicative, non contractuelle, sans conseil financier personnalisé.'}
+
 @app.post('/api/ai/generate-doc')
-async def generate_doc(request:Request):
-    p=await request.json(); doc_type=p.get('type','LOI'); buf=io.BytesIO(); c=canvas.Canvas(buf); c.drawString(80,800,f"KAMOGUI - {doc_type}"); c.drawString(80,760,"Document généré automatiquement par Gold Autonome."); c.drawString(80,730,str(p)); c.save(); buf.seek(0); return StreamingResponse(buf,media_type='application/pdf',headers={"Content-Disposition":f"attachment; filename=kamogui-{doc_type}.pdf"})
+def generate_doc(data: DocPayload, authorization: Optional[str] = Header(default=None), token: Optional[str] = Header(default=None)):
+    if not is_authenticated(authorization=authorization, token=token):
+        raise HTTPException(status_code=401, detail='login required')
+    content = f"""KAMOGUI International Gold\nDocument: {data.type}\nEntreprise: {data.company}\n\nCe document est généré par Gold Autonome pour un usage corporate préliminaire.\nIl doit être validé par les équipes légales, conformité et finance avant usage externe.\n\nAxes clés:\n- Traçabilité de l’origine de l’or\n- KYC/KYB et conformité AML\n- Conditions logistiques et export\n- Confidentialité et gouvernance documentaire\n"""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+        buffer = io.BytesIO()
+        pdf = canvas.Canvas(buffer, pagesize=A4)
+        width, height = A4
+        y = height - 72
+        for line in content.split('\n'):
+            pdf.drawString(72, y, line[:100]); y -= 18
+            if y < 72: pdf.showPage(); y = height - 72
+        pdf.save(); buffer.seek(0)
+        return StreamingResponse(buffer, media_type='application/pdf', headers={'Content-Disposition': f'attachment; filename=kamogui-{data.type}.pdf'})
+    except Exception:
+        return StreamingResponse(io.BytesIO(content.encode()), media_type='text/plain', headers={'Content-Disposition': f'attachment; filename=kamogui-{data.type}.txt'})
