@@ -1,25 +1,56 @@
 import { useState } from 'react'
 
-export default function GoldProspector(){
-  const [input,setInput]=useState('')
-  const [result,setResult]=useState<any>(null)
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-  async function analyze(){
-    const res = await fetch('/api/gold-prospector/analyze',{
+export default function GoldProspector(){
+  const [query,setQuery]=useState('')
+  const [results,setResults]=useState<any[]>([])
+  const [loading,setLoading]=useState(false)
+
+  async function search(){
+    setLoading(true)
+    const res = await fetch(`${API}/api/gold-prospector/search`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(input)
+      body:JSON.stringify({query})
     })
     const data = await res.json()
-    setResult(data)
+    setResults(data.prospects || [])
+    setLoading(false)
   }
 
   return (
-    <div style={{padding:40}}>
-      <h1>Gold Prospector</h1>
-      <input value={input} onChange={e=>setInput(e.target.value)} placeholder="Acheteur d'or Paris" />
-      <button onClick={analyze}>Analyser</button>
-      {result && <pre>{JSON.stringify(result,null,2)}</pre>}
+    <div className="container">
+      <h1 className="sectionTitle">Gold Prospector</h1>
+      <p className="muted">Trouvez des prospects qualifiés dans le marché de l’or</p>
+
+      <div style={{display:'flex',gap:10,marginTop:20}}>
+        <input className="input" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Acheteur d'or Paris" />
+        <button className="btn btnGold" onClick={search}>Rechercher</button>
+      </div>
+
+      {loading && <p>Chargement...</p>}
+
+      <div className="grid" style={{marginTop:30}}>
+        {results.map((p,i)=> (
+          <div key={i} className="card">
+            <h3>{p.name}</h3>
+            <a href={p.url} target="_blank">Voir site</a>
+
+            <div className="metric">{p.gold_score}/10</div>
+            <p>Trust: {p.trust.trust_level}</p>
+
+            {p.emails?.length > 0 && (
+              <div>
+                <strong>Emails:</strong>
+                {p.emails.map((e:any,idx:number)=> (
+                  <div key={idx}>{e}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
