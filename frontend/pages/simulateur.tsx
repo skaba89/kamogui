@@ -1,42 +1,42 @@
-import { useState } from 'react'
-import Layout from '../components/Layout'
+import { useState } from "react"
+import Layout from "../components/Layout"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kamogui.onrender.com'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://kamogui.onrender.com"
 
-export default function Simulateur(){
-  const [amount,setAmount]=useState(10000)
-  const [result,setResult]=useState<any>(null)
+export default function Simulateur() {
+  const [amount, setAmount] = useState(10000)
+  const [result, setResult] = useState<any>(null)
 
-  async function simulate(){
-    const r = await fetch(`${API_URL}/api/ai/simulate`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ amount, variation_pct: 5 })
+  async function simulate() {
+    const res = await fetch(API_URL + "/api/ai/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount, variation_pct: 5 }),
     })
-    const d = await r.json()
-    setResult(d)
+    const data = await res.json()
+    setResult(data)
   }
 
   return (
     <Layout>
-      <div className="container" style={{padding:80}}>
+      <div className="container">
         <h1>Simulateur investissement or</h1>
 
         <input
+          className="input"
           type="number"
           value={amount}
-          onChange={e=>setAmount(Number(e.target.value))}
-          className="input"
+          onChange={(e) => setAmount(Number(e.target.value))}
         />
 
-        <button onClick={simulate} className="btn btnGold">
+        <button className="btn btnGold" onClick={simulate}>
           Simuler
         </button>
 
         {result && (
           <div>
-            <p>📈 Scénario haut: {result.scenario_up}</p>
-            <p>📉 Scénario bas: {result.scenario_down}</p>
+            <p>Haut : {result.scenario_up}</p>
+            <p>Bas : {result.scenario_down}</p>
           </div>
         )}
       </div>

@@ -1,11 +1,11 @@
-import Layout from '../components/Layout'
+import Layout from "../components/Layout"
 
-export default function Admin(){
+export default function Admin() {
   return (
     <Layout>
-      <div className="container" style={{padding:80}}>
+      <div className="container">
         <h1>CRM Leads</h1>
-        <p>Visualisation des investisseurs HOT / WARM / COLD</p>
+        <p>Les leads investisseurs seront affichés ici.</p>
       </div>
     </Layout>
   )
