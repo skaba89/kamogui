@@ -14,6 +14,23 @@ def root():
 def health():
     return {"status":"ok"}
 
+@app.get("/api/gold")
+def gold_prices():
+    try:
+        r = requests.get("https://api.metals.live/v1/spot")
+        data = r.json()
+        gold_usd = next((item[1] for item in data if item[0] == "gold"), None)
+        return {
+            "USD": gold_usd,
+            "EUR": gold_usd * 0.92 if gold_usd else None,
+            "GBP": gold_usd * 0.79 if gold_usd else None,
+            "CNY": gold_usd * 7.2 if gold_usd else None,
+            "GNF": gold_usd * 8600 if gold_usd else None,
+            "XOF": gold_usd * 600 if gold_usd else None
+        }
+    except:
+        return {"error":"gold data unavailable"}
+
 @app.post("/api/chat")
 async def chat(request: Request):
     data = await request.json()
