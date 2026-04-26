@@ -1,9 +1,4 @@
 import os
-import io
-import time
-from typing import Optional
-
-import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -22,13 +17,23 @@ try:
 except Exception:
     core_api_router = None
 
-app = FastAPI(title='KAMOGUI Enterprise API', version='5.0.1')
+app = FastAPI(title='KAMOGUI Enterprise API', version='5.0.2')
+
+frontend_url = os.getenv('FRONTEND_URL', '').strip()
+allowed_origins = [
+    'https://kamogui.netlify.app',
+    'https://www.kamogui.netlify.app',
+    'http://localhost:3000',
+]
+if frontend_url and frontend_url not in allowed_origins:
+    allowed_origins.append(frontend_url)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv('FRONTEND_URL', '*')],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r'https://.*--kamogui\.netlify\.app|https://.*\.netlify\.app',
     allow_credentials=True,
-    allow_methods=['*'],
+    allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allow_headers=['*'],
 )
 
