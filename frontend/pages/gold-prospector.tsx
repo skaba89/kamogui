@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Layout from '../components/Layout'
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -20,6 +21,7 @@ export default function GoldProspector(){
   }
 
   return (
+    <Layout>
     <div className="container">
       <h1 className="sectionTitle">Gold Prospector</h1>
       <p className="muted">Trouvez des prospects qualifiés dans le marché de l’or</p>
@@ -38,7 +40,7 @@ export default function GoldProspector(){
             <a href={p.url} target="_blank">Voir site</a>
 
             <div className="metric">{p.gold_score}/10</div>
-            <p>Trust: {p.trust.trust_level}</p>
+            <p>Trust: {p.trust?.trust_level}</p>
 
             {p.emails?.length > 0 && (
               <div>
@@ -52,5 +54,6 @@ export default function GoldProspector(){
         ))}
       </div>
     </div>
+    </Layout>
   )
 }
